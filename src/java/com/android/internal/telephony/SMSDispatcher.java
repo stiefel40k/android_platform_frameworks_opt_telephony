@@ -933,8 +933,10 @@ public abstract class SMSDispatcher extends Handler {
      *  raw pdu of the status report is in the extended data ("pdu").
      * @param destAddr the destination phone number (for short code confirmation)
      */
+ // begin WITH_TAINT_TRACKING
     protected void sendRawPdu(byte[] smsc, byte[] pdu, PendingIntent sentIntent,
-            PendingIntent deliveryIntent, String destAddr) {
+            PendingIntent deliveryIntent, String destAddr, String contents) {
+// end WITH_TAINT_TRACKING
         if (mSmsSendDisabled) {
             if (sentIntent != null) {
                 try {
@@ -994,8 +996,10 @@ public abstract class SMSDispatcher extends Handler {
 
         // Strip non-digits from destination phone number before checking for short codes
         // and before displaying the number to the user if confirmation is required.
+// begin WITH_TAINT_TRACKING
         SmsTracker tracker = new SmsTracker(map, sentIntent, deliveryIntent, appInfo,
-                PhoneNumberUtils.extractNetworkPortion(destAddr));
+                PhoneNumberUtils.extractNetworkPortion(destAddr), contents);
+// end WITH_TAINT_TRACKING
 
         // checkDestination() returns true if the destination is not a premium short code or the
         // sending app is approved to send to short codes. Otherwise, a message is sent to our
@@ -1325,14 +1329,24 @@ public abstract class SMSDispatcher extends Handler {
         public final PackageInfo mAppInfo;
         public final String mDestAddress;
 
+// begin WITH_TAINT_TRACKING
+        // PJG: for logging message contents
+        public final String mContents;
+// end WITH_TAINT_TRACKING
+
+// begin WITH_TAINT_TRACKING
         public SmsTracker(HashMap<String, Object> data, PendingIntent sentIntent,
-                PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr) {
+                PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr, String contents) {
+// end WITH_TAINT_TRACKING
             mData = data;
             mSentIntent = sentIntent;
             mDeliveryIntent = deliveryIntent;
             mRetryCount = 0;
             mAppInfo = appInfo;
             mDestAddress = destAddr;
+// begin WITH_TAINT_TRACKING
+            mContents = contents;
+// end WITH_TAINT_TRACKING
         }
 
         /**
