@@ -38,6 +38,11 @@ import com.android.internal.telephony.cdma.sms.UserData;
 
 import java.util.HashMap;
 
+// begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+import com.android.internal.telephony.IccUtils;
+// end WITH_TAINT_TRACKING
+
 public class CdmaSMSDispatcher extends SMSDispatcher {
     private static final String TAG = "CdmaSMSDispatcher";
     private static final boolean VDBG = false;
@@ -105,7 +110,10 @@ public class CdmaSMSDispatcher extends SMSDispatcher {
                 scAddr, destAddr, destPort, data, (deliveryIntent != null));
         HashMap map = getSmsTrackerMap(destAddr, scAddr, destPort, data, pdu);
         SmsTracker tracker = getSmsTracker(map, sentIntent, deliveryIntent,
-                getFormat());
+            // begin WITH_TAINT_TRACKING
+                //getFormat());
+                getFormat(), "0x"+IccUtils.bytesToHexString(data));
+            // end WITH_TAINT_TRACKING
         sendSubmitPdu(tracker);
     }
 
@@ -117,7 +125,10 @@ public class CdmaSMSDispatcher extends SMSDispatcher {
                 scAddr, destAddr, text, (deliveryIntent != null), null);
         HashMap map = getSmsTrackerMap(destAddr, scAddr, text, pdu);
         SmsTracker tracker = getSmsTracker(map, sentIntent,
-                deliveryIntent, getFormat());
+            // begin WITH_TAINT_TRACKING
+                //deliveryIntent, getFormat());
+                deliveryIntent, getFormat(), text);
+            // end WITH_TAINT_TRACKING
         sendSubmitPdu(tracker);
     }
 
@@ -153,7 +164,10 @@ public class CdmaSMSDispatcher extends SMSDispatcher {
         HashMap map = getSmsTrackerMap(destinationAddress, scAddress,
                 message, submitPdu);
         SmsTracker tracker = getSmsTracker(map, sentIntent,
-                deliveryIntent, getFormat());
+            // begin WITH_TAINT_TRACKING
+                //deliveryIntent, getFormat());
+                deliveryIntent, getFormat(), message);
+            // end WITH_TAINT_TRACKING
         sendSubmitPdu(tracker);
     }
 
@@ -180,6 +194,15 @@ public class CdmaSMSDispatcher extends SMSDispatcher {
         // byte[] smsc = (byte[]) map.get("smsc");  // unused for CDMA
         byte[] pdu = (byte[]) map.get("pdu");
 
+// begin WITH_TAINT_TRACKING
+        int tag = Taint.getTaintByteArray(pdu);
+        if (tag != Taint.TAINT_CLEAR) {
+            String tstr = "0x" + Integer.toHexString(tag);
+            Taint.log("CdmaSMSDispatcher.sendSMS(" + tracker.mDestAddress
+                      + ") received data from app " + tracker.mAppInfo.packageName
+                      + " with tag " + tstr + " data=[" + tracker.mContents + "]");
+        }
+// end WITH_TAINT_TRACKING
         Message reply = obtainMessage(EVENT_SEND_SMS_COMPLETE, tracker);
 
         Rlog.d(TAG, "sendSms: "

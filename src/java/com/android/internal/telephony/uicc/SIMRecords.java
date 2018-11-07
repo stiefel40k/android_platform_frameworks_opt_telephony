@@ -38,6 +38,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+// begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+// end WITH_TAINT_TRACKING
+
 /**
  * {@hide}
  */
@@ -295,6 +299,10 @@ public class SIMRecords extends IccRecords {
             Message onComplete) {
 
         mMsisdn = number;
+// begin WITH_TAINT_TRACKING
+        // causes overflow in logcat, disable for now
+        //Taint.addTaintString(msisdn, Taint.TAINT_PHONE_NUMBER);
+// end WITH_TAINT_TRACKING
         mMsisdnTag = alphaTag;
 
         if(DBG) log("Set MSISDN: " + mMsisdnTag + " " + /*mMsisdn*/ "xxxxxxx");
@@ -590,6 +598,12 @@ public class SIMRecords extends IccRecords {
                 }
 
                 mImsi = (String) ar.result;
+// begin WITH_TAINT_TRACKING
+                // causes overflow in logcat, disable for now
+                //if (mImsi != null) {
+                //    Taint.addTaintString(mImsi, Taint.TAINT_IMSI);
+                //}
+// end WITH_TAINT_TRACKING
 
                 // IMSI (MCC+MNC+MSIN) is at least 6 digits, but not more
                 // than 15 (and usually 15).
@@ -736,6 +750,10 @@ public class SIMRecords extends IccRecords {
                 adn = (AdnRecord)ar.result;
 
                 mMsisdn = adn.getNumber();
+// begin WITH_TAINT_TRACKING
+                // causes overflow in logcat, disable for now
+                //Taint.addTaintString(msisdn, Taint.TAINT_PHONE_NUMBER);
+// end WITH_TAINT_TRACKING
                 mMsisdnTag = adn.getAlphaTag();
 
                 log("MSISDN: " + /*mMsisdn*/ "xxxxxxx");
@@ -824,6 +842,9 @@ public class SIMRecords extends IccRecords {
                 }
 
                 mIccId = IccUtils.bcdToString(data, 0, data.length);
+// begin WITH_TAINT_TRACKING
+                Taint.addTaintString(mIccId, Taint.TAINT_ICCID);
+// end WITH_TAINT_TRACKING
 
                 log("iccid: " + mIccId);
 

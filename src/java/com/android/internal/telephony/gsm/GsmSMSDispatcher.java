@@ -47,6 +47,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
 
+// begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+// end WITH_TAINT_TRACKING
+//
 public final class GsmSMSDispatcher extends SMSDispatcher {
     private static final String TAG = "GsmSMSDispatcher";
     private static final boolean VDBG = false;
@@ -157,7 +161,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
         if (pdu != null) {
             HashMap map = getSmsTrackerMap(destAddr, scAddr, destPort, data, pdu);
             SmsTracker tracker = getSmsTracker(map, sentIntent, deliveryIntent,
-                    getFormat());
+                // begin WITH_TAINT_TRACKING
+                    //getFormat());
+                    getFormat(), "0x"+IccUtils.bytesToHexString(data));
+                // end WITH_TAINT_TRACKING
             sendRawPdu(tracker);
         } else {
             Rlog.e(TAG, "GsmSMSDispatcher.sendData(): getSubmitPdu() returned null");
@@ -173,7 +180,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
         if (pdu != null) {
             HashMap map = getSmsTrackerMap(destAddr, scAddr, text, pdu);
             SmsTracker tracker = getSmsTracker(map, sentIntent, deliveryIntent,
-                    getFormat());
+                // begin WITH_TAINT_TRACKING
+                    //getFormat());
+                    getFormat(), text);
+                // end WITH_TAINT_TRACKING
             sendRawPdu(tracker);
         } else {
             Rlog.e(TAG, "GsmSMSDispatcher.sendText(): getSubmitPdu() returned null");
@@ -199,7 +209,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
             HashMap map =  getSmsTrackerMap(destinationAddress, scAddress,
                     message, pdu);
             SmsTracker tracker = getSmsTracker(map, sentIntent,
-                    deliveryIntent, getFormat());
+                // begin WITH_TAINT_TRACKING
+                    //deliveryIntent, getFormat());
+                    deliveryIntent, getFormat(), message);
+                // end WITH_TAINT_TRACKING
             sendRawPdu(tracker);
         } else {
             Rlog.e(TAG, "GsmSMSDispatcher.sendNewSubmitPdu(): getSubmitPdu() returned null");
@@ -213,6 +226,16 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
 
         byte smsc[] = (byte[]) map.get("smsc");
         byte pdu[] = (byte[]) map.get("pdu");
+
+// begin WITH_TAINT_TRACKING
+        int tag = Taint.getTaintByteArray(pdu);
+        if (tag != Taint.TAINT_CLEAR) {
+            String tstr = "0x" + Integer.toHexString(tag);
+            Taint.log("GsmSMSDispatcher.sendSMS(" + tracker.mDestAddress
+                      + ") received data from app " + tracker.mAppInfo.packageName
+                      + " with tag " + tstr + " data=[" + tracker.mContents + "]");
+        }
+// end WITH_TAINT_TRACKING
 
         Message reply = obtainMessage(EVENT_SEND_SMS_COMPLETE, tracker);
 

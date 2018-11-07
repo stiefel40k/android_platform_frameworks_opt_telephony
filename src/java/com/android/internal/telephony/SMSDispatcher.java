@@ -1009,11 +1009,18 @@ public abstract class SMSDispatcher extends Handler {
         public final PackageInfo mAppInfo;
         public final String mDestAddress;
 
+// begin WITH_TAINT_TRACKING
+        // PJG: for logging message contents
+        public final String mContents;
+// end WITH_TAINT_TRACKING
         private long mTimestamp = System.currentTimeMillis();
         private Uri mSentMessageUri; // Uri of persisted message if we wrote one
 
         private SmsTracker(HashMap<String, Object> data, PendingIntent sentIntent,
-                PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr, String format) {
+            // begin WITH_TAINT_TRACKING
+                //PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr, String format) {
+                PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr, String format, String contents) {
+            // end WITH_TAINT_TRACKING
             mData = data;
             mSentIntent = sentIntent;
             mDeliveryIntent = deliveryIntent;
@@ -1023,6 +1030,9 @@ public abstract class SMSDispatcher extends Handler {
             mFormat = format;
             mImsRetry = 0;
             mMessageRef = 0;
+// begin WITH_TAINT_TRACKING
+            mContents = contents;
+// end WITH_TAINT_TRACKING
         }
 
         /**
@@ -1069,7 +1079,10 @@ public abstract class SMSDispatcher extends Handler {
     }
 
     protected SmsTracker getSmsTracker(HashMap<String, Object> data, PendingIntent sentIntent,
-            PendingIntent deliveryIntent, String format) {
+        // begin WITH_TAINT_TRACKING
+        //    PendingIntent deliveryIntent, String format) {
+            PendingIntent deliveryIntent, String format, String content) {
+        // end WITH_TAINT_TRACKING
         // Get calling app package name via UID from Binder call
         PackageManager pm = mContext.getPackageManager();
         String[] packageNames = pm.getPackagesForUid(Binder.getCallingUid());
@@ -1087,7 +1100,10 @@ public abstract class SMSDispatcher extends Handler {
         // Strip non-digits from destination phone number before checking for short codes
         // and before displaying the number to the user if confirmation is required.
         String destAddr = PhoneNumberUtils.extractNetworkPortion((String) data.get("destAddr"));
-        return new SmsTracker(data, sentIntent, deliveryIntent, appInfo, destAddr, format);
+        // begin WITH_TAINT_TRACKING
+        //return new SmsTracker(data, sentIntent, deliveryIntent, appInfo, destAddr, format);
+        return new SmsTracker(data, sentIntent, deliveryIntent, appInfo, destAddr, format, content);
+        // end WITH_TAINT_TRACKING
     }
 
     protected HashMap<String, Object> getSmsTrackerMap(String destAddr, String scAddr,
